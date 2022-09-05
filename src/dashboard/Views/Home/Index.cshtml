@@ -1,0 +1,116 @@
+﻿@using System.Text
+@using services.Dtos
+@model List<DashboardViewModel>
+
+@{
+    ViewData["Title"] = "Home Page";
+}
+
+@{
+    var weeklyBilling = (List<WeeklyBillingDto>)ViewData["WeeklyBilling"];
+    var monthToDate = (List<MonthToDateDto>)ViewData["MonthToDate"];
+}
+
+<!--Main layout-->
+<main style="margin-top: 58px">
+    <div class="container pt-4">
+        <!-- Section: Main chart -->
+        <section class="mb-4">
+            <div class="card">
+                <div class="card-header py-3">
+                    <h5 class="mb-0 text-center"><strong>Accumulated Cost</strong></h5>
+                </div>
+                <div class="card-body">
+                    <canvas class="my-4 w-100" id="myChart" height="380"></canvas>
+                </div>
+            </div>
+        </section>
+        <section class="mb-4">
+            <div class="card">
+                <div class="card-header text-center py-3">
+                    <h5 class="mb-0 text-center">
+                        <strong>Subscriptions - Month to Date</strong>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover text-nowrap">
+                            <thead>
+                                <tr>
+                                    <th scope="col"></th>
+                                    <th scope="col">Subscription ID</th>
+                                    <th scope="col">Value (U$)</th>
+                                    <th scope="col">Month</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (monthToDate != null)
+                                {
+                                    foreach (var item in monthToDate)
+                                    {
+                                        <tr>
+                                            <th scope="row">#</th>
+                                            <td>@Html.DisplayFor(modelItem => item.SubscriptionId)</td>
+                                            <td>USD @Html.DisplayFor(modelItem => item.Value)</td>
+                                            <td>@Html.DisplayFor(modelItem => item.Month)</td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+    <p>
+
+    </p>
+</main>
+<!--Main layout-->
+
+<script>
+    // Graph
+    var ctx = document.getElementById("myChart");
+
+    var myChart = new Chart(ctx, {
+        type: "line",
+        data: {
+            labels: [
+    @{
+        StringBuilder label = new StringBuilder();
+        foreach (var item in weeklyBilling.Select(x => x.Date))
+        {
+            label.Append("'" + item.Date.ToString("yyyy-MM-dd") + "', ");
+        }
+        @Html.Raw(label)
+        ;
+    }
+                        ],
+            datasets: [
+                {
+                    data: [@Html.Raw(string.Join(",", weeklyBilling.Select(x => x.Total)))],
+                    lineTension: 0,
+                    backgroundColor: "transparent",
+                    borderColor: "#007bff",
+                    borderWidth: 2,
+                    pointBackgroundColor: "#007bff",
+                },
+            ],
+        },
+        options: {
+            scales: {
+                yAxes: [
+                    {
+                        ticks: {
+                            beginAtZero: false,
+                        },
+                    },
+                ],
+            },
+            legend: {
+                display: false,
+            },
+        },
+    });
+</script>
