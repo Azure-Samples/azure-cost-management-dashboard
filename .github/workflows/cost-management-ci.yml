@@ -8,8 +8,10 @@ on:
 
 env:
   CONFIGURATION: Release
+  AZ_RG_NAME: 'rg-dashboard-demo'
+  AZ_APP_NAME: 'dashboard-demo'
   
-jobs:
+jobs:      
   build:
 
     runs-on: ubuntu-latest
@@ -36,9 +38,32 @@ jobs:
       with:
         name: dashboard-publish
         path: DashboardApp
+  
+  infra:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Azure Login
+      uses: Azure/login@v1.4.4
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+    
+    - name: Deploy Template
+      uses: Azure/arm-deploy@v1.0.8
+      with:
+        scope: resourcegroup
+        resourceGroupName: ${{ env.AZ_RG_NAME }}
+        template: infra/azure-webapp.bicep
+        deploymentMode: Incremental
+        deploymentName: 'gh-actions'
+        parameters: webAppName=${{ env.AZ_APP_NAME }}
+        failOnStdErr: false
 
   release:
-    needs: build
+    needs: infra
     runs-on: ubuntu-latest
 
     steps:
@@ -48,20 +73,13 @@ jobs:
           name: dashboard-publish
           path: dashboard
       
-      - name: Display structure of downloaded files
-        run: |
-          echo 'Current directory'
-          pwd
-          echo 'List directory'
-          ls -R
-      
-      #- name: Azure Login
-      #  uses: Azure/login@v1.4.4
-      #  with:
-      #    creds: ${{ secrets.AZURE_CREDENTIALS }}
+      - name: Azure Login
+        uses: Azure/login@v1.4.4
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      #- name: Deploy APP
-      #  uses: azure/webapps-deploy@v2.2.3
-      #  with:
-      #    app-name: dashboard-webapp
-      #    package: dashboard
+      - name: Deploy APP
+        uses: azure/webapps-deploy@v2.2.3
+        with:
+          app-name: ${{ env.AZ_APP_NAME }}
+          package: dashboard
