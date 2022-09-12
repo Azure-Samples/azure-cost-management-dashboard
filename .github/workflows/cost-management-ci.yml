@@ -1,0 +1,85 @@
+name: cost-management-ci
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  CONFIGURATION: Release
+  AZ_RG_NAME: 'rg-dashboard-demo'
+  AZ_APP_NAME: 'dashboard-demo'
+  
+jobs:      
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    
+    - name: Setup .NET Core SDK
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 6.0.x
+    
+    - name: Restore
+      run: dotnet restore src/azure-cost-management.sln
+    
+    - name: Build
+      run: dotnet build src/azure-cost-management.sln --configuration ${{ env.CONFIGURATION }} --no-restore
+
+    - name: Publish Dashboard
+      run: dotnet publish --configuration ${{ env.CONFIGURATION }} --output DashboardApp src/dashboard/dashboard.csproj
+      
+    - name: Upload dotnet publish results
+      uses: actions/upload-artifact@v2
+      with:
+        name: dashboard-publish
+        path: DashboardApp
+  
+  infra:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Azure Login
+      uses: Azure/login@v1.4.4
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+    
+    - name: Deploy Template
+      uses: Azure/arm-deploy@v1.0.8
+      with:
+        scope: resourcegroup
+        resourceGroupName: ${{ env.AZ_RG_NAME }}
+        template: infra/azure-webapp.bicep
+        deploymentMode: Incremental
+        deploymentName: 'gh-actions'
+        parameters: webAppName=${{ env.AZ_APP_NAME }}
+        failOnStdErr: false
+
+  release:
+    needs: infra
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Dowload artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: dashboard-publish
+          path: dashboard
+      
+      - name: Azure Login
+        uses: Azure/login@v1.4.4
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Deploy APP
+        uses: azure/webapps-deploy@v2.2.3
+        with:
+          app-name: ${{ env.AZ_APP_NAME }}
+          package: dashboard
