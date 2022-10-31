@@ -32,7 +32,7 @@ namespace dashboard
         {
             _logger.LogWarning("API Service CostManagementWorker: Executou chamada de API GetBillingMonthToDate.");
 
-            var task = Task.Run(async () => await CostManagementService.AzureBillingMonthToDateApiFetch());
+            var task = Task.Run(async () => await CostManagementService.AzureBillingMonthToDateApiFetchAsync());
             task.Wait();
         }
 

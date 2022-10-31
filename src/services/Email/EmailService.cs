@@ -20,7 +20,7 @@ public class EmailService
             if (!isValidRequest)
                 return;
 
-            MailMessage mailMessage = new MailMessage
+            var mailMessage = new MailMessage
             {
                 From = new MailAddress(Utils.EmailFrom)
             };
@@ -40,8 +40,10 @@ public class EmailService
                 Credentials = new System.Net.NetworkCredential(Utils.EmailCredential, Utils.EmailPassword),
                 DeliveryMethod = SmtpDeliveryMethod.Network
             };
-            
-            await sMTPClient.SendMailAsync(mailMessage);
+
+            await sMTPClient
+                    .SendMailAsync(mailMessage)
+                    .ConfigureAwait(false);
         }
         catch (System.Exception)
         {
