@@ -6,6 +6,9 @@ namespace services.APIs.CostManagement
 {
     public class CostManagementDataService
     {
+        const string commandSql = "select top 8 sum(value) as total, date from[dbo].[billing] group by date order by date";
+        const int columnTotal = 0;
+        const int columnDate = 1;
         public async Task<List<WeeklyBillingDto>> GetWeeklyBillingAsync()
         {
             var list = new List<WeeklyBillingDto>();
@@ -15,7 +18,7 @@ namespace services.APIs.CostManagement
                 using var connection = DatabaseFactory.GetConnection();
                 await connection.OpenAsync();
 
-                SqlCommand cmd = new SqlCommand("select top 8 sum(value) as total, date from [dbo].[billing] group by date order by date", connection);
+                var cmd = new SqlCommand(commandSql, connection);
 
                 using SqlDataReader reader = cmd.ExecuteReader();
 
@@ -23,13 +26,13 @@ namespace services.APIs.CostManagement
                 {
                     list.Add(new WeeklyBillingDto()
                     {
-                        Total = reader.GetDouble(0),
-                        Date = reader.GetDateTime(1),
+                        Total = reader.GetDouble(columnTotal),
+                        Date = reader.GetDateTime(columnDate),
                     });
                 }
                 return list;
             }
-            catch (System.Exception)
+            catch (Exception)
             {
                 throw;
             }
