@@ -4,7 +4,7 @@ public static class CostManagementService
 {
     private static HttpClient _httpClient = null;
     private readonly static SemaphoreSlim _semaphoreSlim = new(1, 1);
-    private const int elementBillingValue = 1;
+    private const int elementBillingValue = 0;
 
     public static async Task AzureBillingMonthToDateApiFetchAsync()
     {
